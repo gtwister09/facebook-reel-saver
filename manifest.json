@@ -5,6 +5,7 @@
   "description": "Right-click on Facebook reels to save their links to a text file",
   "permissions": [
     "contextMenus",
+    "storage",
     "downloads"
   ],
   "host_permissions": [
