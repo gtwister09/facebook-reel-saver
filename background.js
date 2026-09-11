@@ -1,6 +1,3 @@
-// Store the downloads folder path in storage
-let downloadsFolderPath = null;
-
 // Create context menu for Facebook reels
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
@@ -26,38 +23,50 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   }
 });
 
-// Function to save reel link by downloading incrementally
+// Function to save reel link with proper appending
 function saveReelLink(url) {
   try {
     // Get existing links from storage
     chrome.storage.local.get('reelLinks', (result) => {
       let allLinks = result.reelLinks || '';
       
-      // Append new link
-      allLinks += url + '\n';
-      
-      // Save to storage
-      chrome.storage.local.set({ reelLinks: allLinks }, () => {
-        // Create data URL with all accumulated links
-        const encodedContent = encodeURIComponent(allLinks);
-        const dataUrl = 'data:text/plain;charset=utf-8,' + encodedContent;
+      // Only add if not already in the list (avoid duplicates)
+      if (!allLinks.includes(url)) {
+        // Append new link
+        allLinks += url + '\n';
         
-        // Download with overwrite (this ensures the file always has all links)
-        chrome.downloads.download({
-          url: dataUrl,
-          filename: 'facebook_reels.txt',
-          conflictAction: 'overwrite'
-        }, (downloadId) => {
-          if (chrome.runtime.lastError) {
-            console.error('Download error:', chrome.runtime.lastError);
-          } else {
-            console.log('Reel link appended:', url);
-            console.log('Total links saved:', allLinks.split('\n').filter(l => l).length);
-          }
+        // Save to storage
+        chrome.storage.local.set({ reelLinks: allLinks }, () => {
+          // Download the complete file with all links
+          downloadCompleteFile(allLinks);
         });
-      });
+      } else {
+        console.log('Link already saved:', url);
+      }
     });
   } catch (error) {
     console.error('Error saving reel link:', error);
   }
+}
+
+// Function to download the complete accumulated file
+function downloadCompleteFile(content) {
+  // Generate a unique timestamp to force Firefox to re-download (not use cache)
+  const timestamp = new Date().getTime();
+  const encodedContent = encodeURIComponent(content);
+  const dataUrl = 'data:text/plain;charset=utf-8,' + encodedContent;
+  
+  chrome.downloads.download({
+    url: dataUrl,
+    filename: 'facebook_reels.txt',
+    conflictAction: 'overwrite',  // This must be overwrite to update the file
+    saveAs: false
+  }, (downloadId) => {
+    if (chrome.runtime.lastError) {
+      console.error('Download error:', chrome.runtime.lastError);
+    } else {
+      const linkCount = content.split('\n').filter(l => l.trim()).length;
+      console.log('File updated with', linkCount, 'total links');
+    }
+  });
 }
