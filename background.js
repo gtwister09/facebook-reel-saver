@@ -1,3 +1,6 @@
+// Store the downloads folder path in storage
+let downloadsFolderPath = null;
+
 // Create context menu for Facebook reels
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
@@ -23,32 +26,36 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   }
 });
 
-// Function to save reel link to file (truly appendable)
-async function saveReelLink(url) {
+// Function to save reel link by downloading incrementally
+function saveReelLink(url) {
   try {
-    // Get existing content from storage
-    const result = await chrome.storage.local.get('reelLinks');
-    let allLinks = result.reelLinks || '';
-    
-    // Append new link
-    allLinks += url + '\n';
-    
-    // Save back to storage
-    await chrome.storage.local.set({ reelLinks: allLinks });
-    
-    // Download the updated file
-    const dataUrl = 'data:text/plain;charset=utf-8,' + encodeURIComponent(allLinks);
-    
-    chrome.downloads.download({
-      url: dataUrl,
-      filename: 'facebook_reels.txt',
-      conflictAction: 'overwrite'  // Overwrite with accumulated links
-    }, (downloadId) => {
-      if (chrome.runtime.lastError) {
-        console.error('Download error:', chrome.runtime.lastError);
-      } else {
-        console.log('Reel link saved and file updated:', url);
-      }
+    // Get existing links from storage
+    chrome.storage.local.get('reelLinks', (result) => {
+      let allLinks = result.reelLinks || '';
+      
+      // Append new link
+      allLinks += url + '\n';
+      
+      // Save to storage
+      chrome.storage.local.set({ reelLinks: allLinks }, () => {
+        // Create data URL with all accumulated links
+        const encodedContent = encodeURIComponent(allLinks);
+        const dataUrl = 'data:text/plain;charset=utf-8,' + encodedContent;
+        
+        // Download with overwrite (this ensures the file always has all links)
+        chrome.downloads.download({
+          url: dataUrl,
+          filename: 'facebook_reels.txt',
+          conflictAction: 'overwrite'
+        }, (downloadId) => {
+          if (chrome.runtime.lastError) {
+            console.error('Download error:', chrome.runtime.lastError);
+          } else {
+            console.log('Reel link appended:', url);
+            console.log('Total links saved:', allLinks.split('\n').filter(l => l).length);
+          }
+        });
+      });
     });
   } catch (error) {
     console.error('Error saving reel link:', error);
