@@ -6,11 +6,13 @@
   "permissions": [
     "contextMenus",
     "storage",
-    "downloads"
+    "downloads",
+    "webRequest"
   ],
   "host_permissions": [
     "https://facebook.com/*",
-    "https://www.facebook.com/*"
+    "https://www.facebook.com/*",
+    "file://*/*"
   ],
   "background": {
     "scripts": ["background.js"]
