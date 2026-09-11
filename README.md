@@ -6,6 +6,7 @@ A Firefox extension that allows you to right-click on Facebook reels and save th
 
 - Right-click context menu on Facebook reel links
 - Saves reel URLs directly to `facebook_reels.txt`
+- **Properly appends links** - each new link is added to the file without overwriting previous links
 - No timestamps - only the links are saved
 - Simple and lightweight
 
@@ -23,6 +24,18 @@ A Firefox extension that allows you to right-click on Facebook reels and save th
 2. Right-click on the reel or its link
 3. Select "Save Reel Link" from the context menu
 4. The link will be appended to `facebook_reels.txt` in your Downloads folder
+5. Each subsequent save will add new links to the existing file
+
+## How It Works
+
+- The extension maintains a list of all saved links in its internal storage
+- When you save a reel link, it:
+  1. Retrieves all previously saved links from storage
+  2. Adds the new link to the collection
+  3. Saves the updated collection back to storage
+  4. Downloads the complete file with all accumulated links
+
+- The downloaded `facebook_reels.txt` file always contains the complete list of all saved reels
 
 ## Files
 
@@ -34,5 +47,6 @@ A Firefox extension that allows you to right-click on Facebook reels and save th
 
 - Links are saved to your Downloads folder as `facebook_reels.txt`
 - Each link is on a new line
-- The file is created automatically if it doesn't exist
-- Multiple clicks will append new links to the existing file
+- The file is created/updated automatically
+- Multiple saves will properly append new links
+- The extension stores the link history internally, so links persist even if the file is deleted
