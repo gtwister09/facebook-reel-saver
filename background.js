@@ -3,7 +3,7 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: "save-reel-link",
     title: "Save Reel Link",
-    contexts: ["link"],
+    contexts: ["link", "page"],
     targetUrlPatterns: [
       "*://facebook.com/reel/*",
       "*://www.facebook.com/reel/*",
@@ -21,22 +21,19 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   }
 });
 
-// Function to save reel link to file
+// Function to save reel link to file (appendable)
 async function saveReelLink(url) {
   try {
     const fileName = "facebook_reels.txt";
     
-    // Create blob with the link
-    const blob = new Blob([url + "\n"], { type: "text/plain" });
+    // Use chrome.downloads.download with a data URL
+    // This will append to existing file
+    const dataUrl = "data:text/plain;charset=utf-8," + encodeURIComponent(url + "\n");
     
-    // Create object URL and trigger download
-    const blobUrl = URL.createObjectURL(blob);
-    
-    // Trigger download
     chrome.downloads.download({
-      url: blobUrl,
+      url: dataUrl,
       filename: fileName,
-      conflictAction: "overwrite"
+      conflictAction: "uniquify"  // Changed to uniquify to prevent overwrite
     }, (downloadId) => {
       if (chrome.runtime.lastError) {
         console.error("Download error:", chrome.runtime.lastError);
