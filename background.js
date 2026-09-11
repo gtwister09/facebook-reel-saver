@@ -17,31 +17,40 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "save-reel-link") {
     const reelUrl = info.linkUrl || info.pageUrl;
-    saveReelLink(reelUrl);
+    if (reelUrl) {
+      saveReelLink(reelUrl);
+    }
   }
 });
 
-// Function to save reel link to file (appendable)
+// Function to save reel link to file (truly appendable)
 async function saveReelLink(url) {
   try {
-    const fileName = "facebook_reels.txt";
+    // Get existing content from storage
+    const result = await chrome.storage.local.get('reelLinks');
+    let allLinks = result.reelLinks || '';
     
-    // Use chrome.downloads.download with a data URL
-    // This will append to existing file
-    const dataUrl = "data:text/plain;charset=utf-8," + encodeURIComponent(url + "\n");
+    // Append new link
+    allLinks += url + '\n';
+    
+    // Save back to storage
+    await chrome.storage.local.set({ reelLinks: allLinks });
+    
+    // Download the updated file
+    const dataUrl = 'data:text/plain;charset=utf-8,' + encodeURIComponent(allLinks);
     
     chrome.downloads.download({
       url: dataUrl,
-      filename: fileName,
-      conflictAction: "uniquify"  // Changed to uniquify to prevent overwrite
+      filename: 'facebook_reels.txt',
+      conflictAction: 'overwrite'  // Overwrite with accumulated links
     }, (downloadId) => {
       if (chrome.runtime.lastError) {
-        console.error("Download error:", chrome.runtime.lastError);
+        console.error('Download error:', chrome.runtime.lastError);
       } else {
-        console.log("Reel link saved:", url);
+        console.log('Reel link saved and file updated:', url);
       }
     });
   } catch (error) {
-    console.error("Error saving reel link:", error);
+    console.error('Error saving reel link:', error);
   }
 }
